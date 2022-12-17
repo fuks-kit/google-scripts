@@ -2,12 +2,42 @@ function onSubmit(event) {
   const responseId = event.response.getId();
   Logger.log("responseId=%s", responseId);
 
+  var date = new Date();
+
+  var day = Utilities.formatDate(date, "GMT+1", "yyyy/MM");
+  var docfolder = Utilities.formatString("/Auslagen/%s/", day);
+  var folder = mkFolder(DriveApp.getRootFolder(), docfolder);
+
+  var time = Utilities.formatDate(date, "GMT+1", "yyyyMMdd-HHmmss");
+  var fin = Utilities.formatString("FIN-%s", time);
+
+  var doc = createDocument(responseId, folder, fin);
+  var docFile = DriveApp.getFileById(doc.getId());
+  folder.addFile(docFile);
+}
+
+/**
+ * @param {string} responseId
+ * @param {DriveApp.Folder} folder
+ * @param {string} filename
+ */
+function createDocument(responseId, folder, filename) {
   const active = FormApp.getActiveForm();
   const response = active.getResponse(responseId);
   const itemResponses = response.getItemResponses();
 
-  var doc = DocumentApp.create("zzzzzzzzz-testfile");
-  var body = doc.getBody();
+  const doc = DocumentApp.create(filename);
+  const body = doc.getBody();
+
+  var style = {};
+  style[DocumentApp.Attribute.HORIZONTAL_ALIGNMENT] = DocumentApp.HorizontalAlignment.RIGHT;
+  style[DocumentApp.Attribute.FOREGROUND_COLOR] = "#666666";
+
+  const header = doc.addHeader();
+  header.appendParagraph(response.getRespondentEmail()).setAttributes(style);
+
+  const title = body.appendParagraph(filename);
+  title.setHeading(DocumentApp.ParagraphHeading.TITLE);
 
   for (var inx = 0; inx < itemResponses.length; inx++) {
     const itemResponse = itemResponses[inx];
@@ -15,10 +45,10 @@ function onSubmit(event) {
     const title = item.getTitle();
     const type = item.getType();
 
-    Logger.log("title=%s type=%s response=%s", title, type);
+    Logger.log("title=%s type=%s", title, type);
 
     if (type == FormApp.ItemType.TEXT || type == FormApp.ItemType.PARAGRAPH_TEXT) {
-      var headline = body.appendParagraph(title);
+      const headline = body.appendParagraph(title);
       headline.setHeading(DocumentApp.ParagraphHeading.HEADING2);
       body.appendParagraph(itemResponse.getResponse())
     }
@@ -29,10 +59,11 @@ function onSubmit(event) {
     }
 
     if (type == FormApp.ItemType.FILE_UPLOAD) {
-      var headline = body.appendParagraph(title);
+      const headline = body.appendParagraph(title);
       headline.setHeading(DocumentApp.ParagraphHeading.HEADING2);
 
       const fileIds = itemResponse.getResponse();
+      const attachments = mkFolder(folder, filename + " (Attachments)");
 
       for (const fileId of fileIds) {
         const file = DriveApp.getFileById(fileId);
@@ -41,6 +72,8 @@ function onSubmit(event) {
 
         const paragraph = body.appendParagraph(file.getName());
         paragraph.setLinkUrl(file.getUrl());
+
+        attachments.addFile(file);
 
         // if (mimeType == "image/jpeg") {
         //   const img = file.getBlob();
@@ -58,59 +91,33 @@ function onSubmit(event) {
       }
     }
   }
-}
-
-function test() {
-  var date = new Date();
-
-  var day = Utilities.formatDate(date, "GMT+1", "yyyy-MM-dd");
-  var docfolder = Utilities.formatString("/finance/%s/", day);
-  var folder = mkdirFolders(docfolder);
-
-  var time = Utilities.formatDate(date, "GMT+1", "yyyy-MM-dd.HH-mm-ss");
-  var fin = Utilities.formatString("FIN-%s", time);
-
-  var doc = createDocument(fin);
-  var docFile = DriveApp.getFileById(doc.getId());
-  folder.addFile(docFile);
-}
-
-function createDocument(fin) {
-  var doc = DocumentApp.create(fin);
-  var body = doc.getBody();
-
-  var title = body.appendParagraph(fin);
-  title.setHeading(DocumentApp.ParagraphHeading.TITLE);
 
   return doc;
 }
 
-function mkdirFolders(path) {
-  var parts = path.split("/");
-  var folder = DriveApp.getRootFolder();
+/**
+ * @param {DriveApp.Folder} parent
+ * @param {string} path
+ */
+function mkFolder(parent, path) {
+  var folder = parent;
 
-  for (const part of parts) {
-    if (part == "") {
+  const parts = path.split("/");
+  for (const foldername of parts) {
+    if (foldername == "") {
       continue;
     }
 
-    folder = mkdirFolder(folder, part);
+    var folders = folder.getFoldersByName(foldername);
+
+    if (folders.hasNext()) {
+      Logger.log("Folder %s exist", foldername);
+      folder = folders.next();
+    } else {
+      Logger.log("Creating %s", foldername);
+      folder = folder.createFolder(foldername);
+    }
   }
 
   return folder;
-}
-
-function mkdirFolder(parent, foldername) {
-  var folders = parent.getFoldersByName(foldername);
-  var folder;
-
-  if (folders.hasNext()) {
-    Logger.log("Folder %s exist", foldername);
-    folder = folders.next();
-  } else {
-    Logger.log("Creating %s", foldername);
-    folder = parent.createFolder(foldername);
-  }
-
-    return folder;
 }
