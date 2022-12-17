@@ -14,6 +14,21 @@ function onSubmit(event) {
   var doc = createDocument(responseId, folder, fin);
   var docFile = DriveApp.getFileById(doc.getId());
   folder.addFile(docFile);
+
+  // sendNotification(docFile);
+}
+
+/**
+ * @param {DocumentApp.Document} doc
+ */
+function sendNotification(doc) {
+  MailApp.sendEmail({
+    to: "finace@fuks.org",
+    subject: "Auslage " + doc.getName(),
+    htmlBody: "" +
+      "Ein eine Auslage wurde beantragt. " +
+      "Zu finden ist diese unter <a href=\"" + doc.getUrl() + "\">" + doc.getName() + "</a>."
+  });
 }
 
 /**
@@ -92,7 +107,7 @@ function createDocument(responseId, folder, filename) {
     }
   }
 
-  return doc;
+    return doc;
 }
 
 /**
@@ -100,24 +115,24 @@ function createDocument(responseId, folder, filename) {
  * @param {string} path
  */
 function mkFolder(parent, path) {
-  var folder = parent;
+    var folder = parent;
 
-  const parts = path.split("/");
-  for (const foldername of parts) {
-    if (foldername == "") {
-      continue;
+    const parts = path.split("/");
+    for (const foldername of parts) {
+        if (foldername == "") {
+            continue;
+        }
+
+        var folders = folder.getFoldersByName(foldername);
+
+        if (folders.hasNext()) {
+            Logger.log("Folder %s exist", foldername);
+            folder = folders.next();
+        } else {
+            Logger.log("Creating %s", foldername);
+            folder = folder.createFolder(foldername);
+        }
     }
 
-    var folders = folder.getFoldersByName(foldername);
-
-    if (folders.hasNext()) {
-      Logger.log("Folder %s exist", foldername);
-      folder = folders.next();
-    } else {
-      Logger.log("Creating %s", foldername);
-      folder = folder.createFolder(foldername);
-    }
-  }
-
-  return folder;
+    return folder;
 }
