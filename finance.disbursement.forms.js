@@ -1,21 +1,23 @@
+const auslagenFolderId = "13uwc4LBe3DNMEJvCBLG2nRQBHv8tkyUM"
+
 function onSubmit(event) {
   const responseId = event.response.getId();
   Logger.log("responseId=%s", responseId);
 
-  var date = new Date();
+  let date = new Date();
 
-  var day = Utilities.formatDate(date, "GMT+1", "yyyy/MM");
-  var docfolder = Utilities.formatString("/Auslagen/%s/", day);
-  var folder = mkFolder(DriveApp.getRootFolder(), docfolder);
+  let time = Utilities.formatDate(date, "GMT+1", "yyyyMMdd-HHmmss");
+  let fin = Utilities.formatString("FIN-%s", time);
 
-  var time = Utilities.formatDate(date, "GMT+1", "yyyyMMdd-HHmmss");
-  var fin = Utilities.formatString("FIN-%s", time);
+  let day = Utilities.formatDate(date, "GMT+1", "yyyy/MM");
+  let docfolder = Utilities.formatString("/%s/%s", day, fin);
+  let folder = mkFolder(DriveApp.getFolderById(auslagenFolderId), docfolder);
 
-  var doc = createDocument(responseId, folder, fin);
-  var docFile = DriveApp.getFileById(doc.getId());
+  let doc = createDocument(responseId, folder, fin);
+  let docFile = DriveApp.getFileById(doc.getId());
   folder.addFile(docFile);
 
-  // sendNotification(docFile);
+  sendNotification(docFile);
 }
 
 /**
@@ -49,7 +51,7 @@ function createDocument(responseId, folder, filename) {
   style[DocumentApp.Attribute.FOREGROUND_COLOR] = "#666666";
 
   const header = doc.addHeader();
-  header.appendParagraph(response.getRespondentEmail()).setAttributes(style);
+  header.appendParagraph("Antragsteller: " + response.getRespondentEmail()).setAttributes(style);
 
   const title = body.appendParagraph(filename);
   title.setHeading(DocumentApp.ParagraphHeading.TITLE);
@@ -65,12 +67,14 @@ function createDocument(responseId, folder, filename) {
     if (type == FormApp.ItemType.TEXT || type == FormApp.ItemType.PARAGRAPH_TEXT) {
       const headline = body.appendParagraph(title);
       headline.setHeading(DocumentApp.ParagraphHeading.HEADING2);
-      body.appendParagraph(itemResponse.getResponse())
+      body.appendParagraph(itemResponse.getResponse());
+      body.appendParagraph("\n");
     }
 
     if (type == FormApp.ItemType.IMAGE) {
       const image = item.asImageItem();
       body.appendImage(image);
+      body.appendParagraph("\n");
     }
 
     if (type == FormApp.ItemType.FILE_UPLOAD) {
@@ -78,17 +82,29 @@ function createDocument(responseId, folder, filename) {
       headline.setHeading(DocumentApp.ParagraphHeading.HEADING2);
 
       const fileIds = itemResponse.getResponse();
-      const attachments = mkFolder(folder, filename + " (Attachments)");
-
       for (const fileId of fileIds) {
-        const file = DriveApp.getFileById(fileId);
-        const mimeType = file.getMimeType();
+        //
+        // Moving an attachment is not possible currently with Drive.
+        // You need to create a copy of the attachment.
+        //
+        const original = DriveApp.getFileById(fileId);
+        const copy = folder.createFile(original.getBlob());
+
+        const mimeType = copy.getMimeType();
         Logger.log("fileId=%s mimeType=%s", fileId, mimeType);
 
-        const paragraph = body.appendParagraph(file.getName());
-        paragraph.setLinkUrl(file.getUrl());
+        const paragraph = body.appendParagraph(copy.getName());
+        paragraph.setLinkUrl(copy.getUrl());
 
-        attachments.addFile(file);
+        // Remove attachments from forms
+        /*
+        let parents = original.getParents();
+        while (parents.hasNext()) {
+          let parent = parents.next();
+          Logger.log("parent=%s --> %s", parent.getId(), parent.getName());
+          parent.removeFile(original);
+        }
+        */
 
         // if (mimeType == "image/jpeg") {
         //   const img = file.getBlob();
@@ -104,10 +120,12 @@ function createDocument(responseId, folder, filename) {
         //   body.appendImage(jpeg);
         // }
       }
+
+      body.appendParagraph("\n");
     }
   }
 
-    return doc;
+  return doc;
 }
 
 /**
@@ -115,24 +133,24 @@ function createDocument(responseId, folder, filename) {
  * @param {string} path
  */
 function mkFolder(parent, path) {
-    var folder = parent;
+  var folder = parent;
 
-    const parts = path.split("/");
-    for (const foldername of parts) {
-        if (foldername == "") {
-            continue;
-        }
-
-        var folders = folder.getFoldersByName(foldername);
-
-        if (folders.hasNext()) {
-            Logger.log("Folder %s exist", foldername);
-            folder = folders.next();
-        } else {
-            Logger.log("Creating %s", foldername);
-            folder = folder.createFolder(foldername);
-        }
+  const parts = path.split("/");
+  for (const foldername of parts) {
+    if (foldername == "") {
+      continue;
     }
+
+    var folders = folder.getFoldersByName(foldername);
+
+    if (folders.hasNext()) {
+      Logger.log("Folder %s exist", foldername);
+      folder = folders.next();
+    } else {
+      Logger.log("Creating %s", foldername);
+      folder = folder.createFolder(foldername);
+    }
+  }
 
     return folder;
 }
