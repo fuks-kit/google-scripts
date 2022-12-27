@@ -24,13 +24,13 @@ function onSubmit(event) {
  * @param {DocumentApp.Document} doc
  */
 function sendNotification(doc) {
-  MailApp.sendEmail({
-    to: "finace@fuks.org",
-    subject: "Auslage " + doc.getName(),
-    htmlBody: "" +
+    MailApp.sendEmail({
+        to: "vorstand-finanzen-recht@fuks.org",
+        subject: "Auslage " + doc.getName(),
+        htmlBody: "" +
       "Ein eine Auslage wurde beantragt. " +
       "Zu finden ist diese unter <a href=\"" + doc.getUrl() + "\">" + doc.getName() + "</a>."
-  });
+    });
 }
 
 /**
@@ -39,65 +39,65 @@ function sendNotification(doc) {
  * @param {string} filename
  */
 function createDocument(responseId, folder, filename) {
-  const active = FormApp.getActiveForm();
-  const response = active.getResponse(responseId);
-  const itemResponses = response.getItemResponses();
+    const active = FormApp.getActiveForm();
+    const response = active.getResponse(responseId);
+    const itemResponses = response.getItemResponses();
 
-  const doc = DocumentApp.create(filename);
-  const body = doc.getBody();
+    const doc = DocumentApp.create(filename);
+    const body = doc.getBody();
 
-  var style = {};
-  style[DocumentApp.Attribute.HORIZONTAL_ALIGNMENT] = DocumentApp.HorizontalAlignment.RIGHT;
-  style[DocumentApp.Attribute.FOREGROUND_COLOR] = "#666666";
+    var style = {};
+    style[DocumentApp.Attribute.HORIZONTAL_ALIGNMENT] = DocumentApp.HorizontalAlignment.RIGHT;
+    style[DocumentApp.Attribute.FOREGROUND_COLOR] = "#666666";
 
-  const header = doc.addHeader();
-  header.appendParagraph("Antragsteller: " + response.getRespondentEmail()).setAttributes(style);
+    const header = doc.addHeader();
+    header.appendParagraph("Antragsteller: " + response.getRespondentEmail()).setAttributes(style);
 
-  const title = body.appendParagraph(filename);
-  title.setHeading(DocumentApp.ParagraphHeading.TITLE);
+    const title = body.appendParagraph(filename);
+    title.setHeading(DocumentApp.ParagraphHeading.TITLE);
 
-  for (var inx = 0; inx < itemResponses.length; inx++) {
-    const itemResponse = itemResponses[inx];
-    const item = itemResponse.getItem();
-    const title = item.getTitle();
-    const type = item.getType();
+    for (var inx = 0; inx < itemResponses.length; inx++) {
+        const itemResponse = itemResponses[inx];
+        const item = itemResponse.getItem();
+        const title = item.getTitle();
+        const type = item.getType();
 
-    Logger.log("title=%s type=%s", title, type);
+        Logger.log("title=%s type=%s", title, type);
 
-    if (type == FormApp.ItemType.TEXT || type == FormApp.ItemType.PARAGRAPH_TEXT) {
-      const headline = body.appendParagraph(title);
-      headline.setHeading(DocumentApp.ParagraphHeading.HEADING2);
-      body.appendParagraph(itemResponse.getResponse());
-      body.appendParagraph("\n");
-    }
+        if (type == FormApp.ItemType.TEXT || type == FormApp.ItemType.PARAGRAPH_TEXT) {
+            const headline = body.appendParagraph(title);
+            headline.setHeading(DocumentApp.ParagraphHeading.HEADING2);
+            body.appendParagraph(itemResponse.getResponse());
+            body.appendParagraph("\n");
+        }
 
-    if (type == FormApp.ItemType.IMAGE) {
-      const image = item.asImageItem();
-      body.appendImage(image);
-      body.appendParagraph("\n");
-    }
+        if (type == FormApp.ItemType.IMAGE) {
+            const image = item.asImageItem();
+            body.appendImage(image);
+            body.appendParagraph("\n");
+        }
 
-    if (type == FormApp.ItemType.FILE_UPLOAD) {
-      const headline = body.appendParagraph(title);
-      headline.setHeading(DocumentApp.ParagraphHeading.HEADING2);
+        if (type == FormApp.ItemType.FILE_UPLOAD) {
+            const headline = body.appendParagraph(title);
+            headline.setHeading(DocumentApp.ParagraphHeading.HEADING2);
 
-      const fileIds = itemResponse.getResponse();
-      for (const fileId of fileIds) {
-        //
-        // Moving an attachment is not possible currently with Drive.
-        // You need to create a copy of the attachment.
-        //
-        const original = DriveApp.getFileById(fileId);
-        const copy = folder.createFile(original.getBlob());
+            const fileIds = itemResponse.getResponse();
+            for (const fileId of fileIds) {
+                //
+                // Moving an attachment is not possible currently with Drive.
+                // You need to create a copy of the attachment.
+                //
+                const original = DriveApp.getFileById(fileId);
+                const copy = folder.createFile(original.getBlob());
 
-        const mimeType = copy.getMimeType();
-        Logger.log("fileId=%s mimeType=%s", fileId, mimeType);
+                const mimeType = copy.getMimeType();
+                Logger.log("fileId=%s mimeType=%s", fileId, mimeType);
 
-        const paragraph = body.appendParagraph(copy.getName());
-        paragraph.setLinkUrl(copy.getUrl());
+                const paragraph = body.appendParagraph(copy.getName());
+                paragraph.setLinkUrl(copy.getUrl());
 
-        // Remove attachments from forms
-        /*
+                // Remove attachments from forms
+                /*
         let parents = original.getParents();
         while (parents.hasNext()) {
           let parent = parents.next();
@@ -106,26 +106,26 @@ function createDocument(responseId, folder, filename) {
         }
         */
 
-        // if (mimeType == "image/jpeg") {
-        //   const img = file.getBlob();
-        //   body.appendImage(img);
-        // } else {
-        //   const paragraph = body.appendParagraph(file.getName());
-        //   paragraph.setLinkUrl(file.getUrl());
-        // }
+                // if (mimeType == "image/jpeg") {
+                //   const img = file.getBlob();
+                //   body.appendImage(img);
+                // } else {
+                //   const paragraph = body.appendParagraph(file.getName());
+                //   paragraph.setLinkUrl(file.getUrl());
+                // }
 
-        // Converting from image/heif to image/jpeg is not supported.
-        // if (mimeType.startsWith("image")) {
-        //   const jpeg = file.getAs("image/jpeg");
-        //   body.appendImage(jpeg);
-        // }
-      }
+                // Converting from image/heif to image/jpeg is not supported.
+                // if (mimeType.startsWith("image")) {
+                //   const jpeg = file.getAs("image/jpeg");
+                //   body.appendImage(jpeg);
+                // }
+            }
 
-      body.appendParagraph("\n");
+            body.appendParagraph("\n");
+        }
     }
-  }
 
-  return doc;
+    return doc;
 }
 
 /**
@@ -133,24 +133,24 @@ function createDocument(responseId, folder, filename) {
  * @param {string} path
  */
 function mkFolder(parent, path) {
-  var folder = parent;
+    var folder = parent;
 
-  const parts = path.split("/");
-  for (const foldername of parts) {
-    if (foldername == "") {
-      continue;
+    const parts = path.split("/");
+    for (const foldername of parts) {
+        if (foldername == "") {
+            continue;
+        }
+
+        var folders = folder.getFoldersByName(foldername);
+
+        if (folders.hasNext()) {
+            Logger.log("Folder %s exist", foldername);
+            folder = folders.next();
+        } else {
+            Logger.log("Creating %s", foldername);
+            folder = folder.createFolder(foldername);
+        }
     }
-
-    var folders = folder.getFoldersByName(foldername);
-
-    if (folders.hasNext()) {
-      Logger.log("Folder %s exist", foldername);
-      folder = folders.next();
-    } else {
-      Logger.log("Creating %s", foldername);
-      folder = folder.createFolder(foldername);
-    }
-  }
 
     return folder;
 }
