@@ -1,20 +1,33 @@
-function onChange(event) {
-  const sheet = SpreadsheetApp.getActiveSpreadsheet()
-    .getSheetByName("data");
+function onSubmit(event) {
+  const responseId = event.response.getId();
+  Logger.log("responseId=%s", responseId);
 
-  const index = sheet.getLastRow();
-  console.log("index", index);
+  const active = FormApp.getActiveForm();
+  const response = active.getResponse(responseId);
+  const itemResponses = response.getItemResponses();
 
-  const results = sheet.getRange(index, 1, 1, 3).getValues();
-  console.log("result", results);
+  const email = response.getRespondentEmail();
 
-  for (let inx = 0; inx < results.length; inx++) {
-    setChipNumber(results[inx][1], results[inx][2]);
+  for (var inx = 0; inx < itemResponses.length; inx++) {
+    const itemResponse = itemResponses[inx];
+    const item = itemResponse.getItem();
+    const title = item.getTitle();
+
+    if (title == "KIT Chipnummer") {
+      const chipnumber = itemResponse.getResponse();
+
+      Logger.log("email='%s' chipnumber='%s'", email, chipnumber);
+      setChipNumber(email, chipnumber);
+
+      break;
+    }
   }
-
-  sheet.deleteRow(index);
 }
 
+/**
+ * @param {string} email
+ * @param {string} chipnumber
+ */
 function setChipNumber(email, chipnumber) {
   const userdata = AdminDirectory.Users.get(email, {
     "projection": "full",
@@ -30,9 +43,9 @@ function setChipNumber(email, chipnumber) {
 
   AdminDirectory.Users.update(userdata, email);
 
-  console.log("update", {
-    "email": email,
-    "chipnumber": chipnumber,
-    "customSchemas": userdata.customSchemas,
+  Logger.log("update", {
+      "email": email,
+      "chipnumber": chipnumber,
+      "customSchemas": userdata.customSchemas,
   });
 }
