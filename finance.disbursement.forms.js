@@ -22,20 +22,13 @@ function onSubmit(event) {
   let docFile = DriveApp.getFileById(doc.getId());
   folder.addFile(docFile);
 
-  sendNotification(docFile, name);
-}
-
-/**
- * @param {DocumentApp.Document} doc
- * @param {string} name
- */
-function sendNotification(doc, name) {
   MailApp.sendEmail({
     to: "vorstand-finanzen-recht@fuks.org",
-    subject: Utilities.formatString("Auslage %s (%s)", name, doc.getName()),
+    cc: response.getRespondentEmail(),
+    subject: Utilities.formatString("Auslage %s (%s)", name, docFile.getName()),
     htmlBody: "" +
       "Ein eine Auslage wurde beantragt. " +
-      "Zu finden ist diese unter <a href=\"" + doc.getUrl() + "\">" + doc.getName() + "</a>."
+      "Zu finden ist diese unter <a href=\"" + doc.getUrl() + "\">" + docFile.getName() + "</a>."
   });
 }
 
@@ -156,5 +149,5 @@ function mkFolder(parent, path) {
     }
   }
 
-    return folder;
+  return folder;
 }
