@@ -1,0 +1,87 @@
+const DATA_SHEET = SpreadsheetApp.openById("1HwHSxhBBscyiI8gzA1oCNGScNq8Yyd5Gulngw1v5Xac").getSheetByName("DATA");
+const NUM_ROWS = 7;
+const START_ROW = 2;
+const START_COL = 1;
+const BODY_PLAIN = "plainMail.html";
+
+// TODO Update media ID!
+const ATTACHMENT = DriveApp.getFileById("1_cGjS_7roBbLZHsMTDwbuTS49bRNNaJI").getBlob();
+const FIELDS = {
+  company: 0,
+  email: 1,
+  teamPersonal: 2,
+  formal: 3,
+  firstName: 4,
+  lastName: 5,
+  teamName: 6
+}
+
+function sendAcquisitionMails() {
+  const lastRow = DATA_SHEET.getLastRow();
+  const data = DATA_SHEET.getRange(START_ROW, START_COL, lastRow-START_ROW+1, NUM_ROWS).getValues();
+  let userName = getUsername();
+  
+  if(userName == "") {
+    userName = "KT-Team";
+  }
+
+  for(let i = 0; i < data.length; i++) {
+    const account = data[i];
+    if(account[FIELDS.email] === "" ){
+      continue;
+    }
+
+    let mailVars = {
+      formal: account[FIELDS.formal],
+      company: account[FIELDS.company],
+      userName: userName,
+      contact: ""
+    }
+
+    if(account[FIELDS.teamPersonal] === "Team") {
+      mailVars.contact = account[FIELDS.teamName];
+    } else {
+      mailVars.contact = account[FIELDS.lastName];
+    }
+    
+    const htmlBody = buildHtmlBody(BODY_PLAIN, mailVars);
+    Logger.log(i + ": " + account[FIELDS.email])
+    
+    let mailObject = {
+      htmlBody: htmlBody,
+      name: "Jean Weber",
+      noReply: false,
+      replyTo: "jean.weber@fuks.org",
+      subject: "Ihre Anzeige im Studierendenmagazin Karlsruher Transfer",
+
+      // TODO: Uncomment
+      //to: account[FIELDS.email],
+      to: "jean.weber@fuks.org",
+      attachments: ATTACHMENT,
+    };
+    
+    // console.log(mailObject);
+    console.log("Send mail to ", mailObject.to);
+
+    // TODO: Uncomment
+    // MailApp.sendEmail(mailObject);
+
+    // TODO: Comment
+    break;
+  }
+}
+
+function buildHtmlBody(fileName, varObject) {
+  let htmlTemplate = HtmlService.createTemplateFromFile(fileName);
+  htmlTemplate.mailVar = varObject;
+  return htmlTemplate.evaluate().getContent();
+}
+
+function getUsername() {
+  var email = Session.getEffectiveUser().getEmail();
+  var self = ContactsApp.getContact(email);
+  if (self) {
+    return self.getFullName();
+  }
+  return "";
+}
