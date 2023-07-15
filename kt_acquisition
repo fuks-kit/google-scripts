@@ -1,11 +1,11 @@
 const DATA_SHEET = SpreadsheetApp.openById("1HwHSxhBBscyiI8gzA1oCNGScNq8Yyd5Gulngw1v5Xac").getSheetByName("DATA");
-const NUM_ROWS = 7;
+//Num_Rows anpassen - aktuell von Row 2 bis Row 21 also 20 Mails
+const NUM_ROWS = 21;
 const START_ROW = 2;
 const START_COL = 1;
 const BODY_PLAIN = "plainMail.html";
 
-// TODO Update media ID!
-const ATTACHMENT = DriveApp.getFileById("1_cGjS_7roBbLZHsMTDwbuTS49bRNNaJI").getBlob();
+const ATTACHMENT = DriveApp.getFileById("1aQv62m6TzuUq722uxijrJzaj7QJ-sThe").getBlob();
 const FIELDS = {
   company: 0,
   email: 1,
@@ -17,16 +17,15 @@ const FIELDS = {
 }
 
 function sendAcquisitionMails() {
-  const lastRow = DATA_SHEET.getLastRow();
-  const data = DATA_SHEET.getRange(START_ROW, START_COL, lastRow-START_ROW+1, NUM_ROWS).getValues();
+  const data = DATA_SHEET.getRange(START_ROW, START_COL, NUM_ROWS + 1).getValues();
   let userName = getUsername();
   
   if(userName == "") {
     userName = "KT-Team";
   }
 
-  for(let i = 0; i < data.length; i++) {
-    const account = data[i];
+  for(let inx = 0; inx < data.length; inx++) {
+    const account = data[inx];
     if(account[FIELDS.email] === "" ){
       continue;
     }
@@ -45,7 +44,7 @@ function sendAcquisitionMails() {
     }
     
     const htmlBody = buildHtmlBody(BODY_PLAIN, mailVars);
-    Logger.log(i + ": " + account[FIELDS.email])
+    Logger.log(inx + ": " + account[FIELDS.email])
     
     let mailObject = {
       htmlBody: htmlBody,
@@ -61,13 +60,11 @@ function sendAcquisitionMails() {
     };
     
     // console.log(mailObject);
-    console.log("Send mail to ", mailObject.to);
-
-    // TODO: Uncomment
-    // MailApp.sendEmail(mailObject);
+    // console.log("Send mail to ", mailObject.to);
+    MailApp.sendEmail(mailObject);
 
     // TODO: Comment
-    break;
+    // break;
   }
 }
 
