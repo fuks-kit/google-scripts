@@ -11,7 +11,7 @@ function onSubmit(event) {
 
   const active = FormApp.getActiveForm();
   const response = active.getResponse(responseId);
-
+  
   const name = response.getRespondentEmail().replace("@fuks.org", "");
 
   let day = Utilities.formatDate(date, "GMT+1", "yyyy/MM");
@@ -27,7 +27,7 @@ function onSubmit(event) {
     cc: response.getRespondentEmail(),
     subject: Utilities.formatString("Auslage %s (%s)", name, docFile.getName()),
     htmlBody: "" +
-      "Ein eine Auslage wurde beantragt. " +
+      "Ein eine Auslage wurde beantragt. " + 
       "Zu finden ist diese unter <a href=\"" + doc.getUrl() + "\">" + docFile.getName() + "</a>."
   });
 }
@@ -47,7 +47,7 @@ function createDocument(response, folder, filename) {
   style[DocumentApp.Attribute.HORIZONTAL_ALIGNMENT] = DocumentApp.HorizontalAlignment.RIGHT;
   style[DocumentApp.Attribute.FOREGROUND_COLOR] = "#666666";
 
-  const header = doc.addHeader();
+  const header = doc.addHeader();  
   header.appendParagraph("Antragsteller: " + response.getRespondentEmail()).setAttributes(style);
 
   const title = body.appendParagraph(filename);
@@ -92,7 +92,7 @@ function createDocument(response, folder, filename) {
 
         const paragraph = body.appendParagraph(copy.getName());
         paragraph.setLinkUrl(copy.getUrl());
-
+        
         // Remove attachments from forms
         /*
         let parents = original.getParents();
@@ -121,7 +121,7 @@ function createDocument(response, folder, filename) {
       body.appendParagraph("\n");
     }
   }
-
+  
   return doc;
 }
 
